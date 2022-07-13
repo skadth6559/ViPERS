@@ -1,0 +1,173 @@
+{% extends "subpages.html" %}
+{% import "bootstrap/wtf.html" as wtf %}
+
+{% block scripts %}
+  {{ super() }}
+  {% include "bokeh.html" %}
+  
+  {{ bk_script | safe }}
+{% endblock %}
+{% block subcontent %} 
+<div class="container">
+	<div class="card m-2">
+        <h3 class="card-header"> Select a date to view a Daily Summary </h3>
+        <div class="card-body">
+			<form method="post"> 
+				{{ date_form.hidden_tag() }}
+				{{ wtf.form_field(date_form.date) }}
+				<input class = 'btn btn-secondary' type= 'submit' name='btn' role = 'button' value = 'Select'> 
+			</form> 
+		</div>
+	</div>
+	<br>
+	<h3> Showing Report from {{ date }} </h3>
+	<div class="card m-2">
+		<h3 class="card-header"> Energy Report </h3> 
+		<div class="card-body">
+			<p style="text-align:center;"> 
+				<div class="table-responsive">
+					<table class="table table-bordered">
+						<tr>
+							<th scope="col">Energy Use Today</th>
+							<th scope="col"> Average Energy Use (Last 30 days)</th>
+						</tr>
+						<tr> 
+							<td> {{ total_power }} </td>
+							<td> {{ month_avg }}  </td>
+						</tr>
+					</table>
+				</div> 
+				{{ power_msg }} 
+			</p>
+		</div> 
+	</div> 
+
+	<br> 
+
+	<div class="card m-2">
+		<h3 class="card-header"> Power Report </h3> 
+		<div class="card-body">
+			<p>
+				<div class="table-responsive">
+					<table class="table table-bordered">
+						<tr>
+							<th scope="col"> Max Power Use </th>
+							<th scope="col"> Min Power Use </th>
+						</tr>
+						<tr> 
+							<td> {{ max_power }} </td>
+							<td> {{ min_power }} </td>
+						</tr> 
+					</table> 	
+				</div>
+				<br>
+				<div class="table-responsive">
+					<table id = 'phaseTable' class="table table-bordered"> 
+                        <tr><th colspan="2" style="text-align:center;"> Average Use </th></tr>
+                        {% if tri_phase %}
+						<tr>
+							<th scope="row" style="background:black;"> <p style="color:white"> Phase A </p> </th>
+							<td> {{ phasea_avg }}  </td>
+						</tr>
+						<tr> 
+							<th scope="row" style="background:red;"> <p style="color:white"> Phase B </p> </th>
+							<td> {{ phaseb_avg }} </td>
+                        </tr>
+                
+                        <tr>
+                            <th scope="row" style="background:blue;"> <p style="color:white"> Phase C </p> </th>
+                            <td> {{ phasec_avg }} </td>
+                        </tr>
+                        {% else %}
+                        <tr>
+							<th scope="row" style="background:black;"> <p style="color:white"> Phase 1 </p> </th>
+							<td> {{ phasea_avg }}  </td>
+						</tr>
+						<tr> 
+							<th scope="row" style="background:red;"> <p style="color:white"> Phase 2 </p> </th>
+							<td> {{ phaseb_avg }} </td>
+                        </tr>
+                        {% endif %} 
+					</table>
+				</div>
+				
+				<br> 
+				<div class="table-responsive"> 
+					<table style = 'width:100%'>
+						<tr><th colspan="3" style="text-align:center;">Power Percentages</th></tr>
+						<tr id='phaseRow'>
+							{{ percent_table }}
+						</tr>
+					</table>
+				</div>
+			</p>
+		</div>
+	</div> 
+	<br>
+	<div class="card m-2">
+		<h3 class="card-header"> Power Quality Report </h3> 
+		<div class="card-body">
+			<p>
+				<div class="table-responsive"> 
+					<table class="table table-bordered">
+						<tr><th colspan="3" style="text-align:center;"> Voltage </th></tr>
+						<tr>
+							<th scope="col"> Max </th>
+							<th scope="col"> Min </th>
+							<th scope="col"> Average </th>
+						</tr>
+						<tr>
+							<td> {{ max_voltage }} </td>
+							<td> {{ min_voltage }}  </td>
+							<td> {{ avg_volt }} </td>
+						</tr>
+					</table>
+				</div>
+				<br>
+				<div class="table-responsive">
+					<table class="table table-bordered">
+						<tr><th colspan="3" style="text-align:center;"> Voltage THD </th></tr>
+						<tr>
+							<th scope="col"> Max </th>
+							<th scope="col"> Min </th>
+							<th scope="col"> Average </th>
+						</tr>
+						<tr>
+							<td> {{ max_thd }}  </td>
+							<td> {{ min_thd }} </td>
+							<td> {{ avg_thd }} </td>
+						</tr>
+					</table> 
+				</div>
+				<br>
+			</p>
+		</div>
+	</div>
+	<br>
+	<br>
+	<div class="card m-2">
+		<h3 class="card-header"> Daily Summary Plots </h3> 
+		<div class="card-body">
+			<div class="p-2">
+				{{ bk_div | safe }}
+				<p align="right">{{elapsed_time}} </p>
+			</div>
+			<br>
+			<form class = 'form form horizontal' method = 'post'>
+				<p class="font-weight-bold">{{description}} &nbsp;&nbsp; (To change graph, choose options below) </p>
+				Variable: &nbsp; {{power_btn}}
+				{{voltage_btn}}
+				{{thd_btn}} &nbsp;&nbsp;&nbsp;&nbsp;
+				Statistic: &nbsp; {{max_btn}}
+				{{min_btn}}
+				{{avg_btn}}
+				<br>
+				<br>
+				<p class="font-weight-bold">Select between phase-based or total power visualizations:&nbsp;&nbsp;{{phasepow_btn}} {{totalpow_btn}}</p>
+				<p class="font-weight-bold">Select time average:&nbsp;&nbsp; {{second_btn}} {{minute_btn}} {{halfhr_btn}} {{hour_btn}}</p>
+			</form>
+		</div>
+	</div> 
+	<br>
+</div>
+{% endblock %} 
