@@ -283,6 +283,8 @@ def daily_report():
                     return redirect(url_for('.daily_report')); 
                 
         #new stuff
+        interval = "large"
+        
         #add config file settings here
         #read config file
         config_object = ConfigParser()
@@ -301,11 +303,21 @@ def daily_report():
                 variableinfo["interval"] = "'30 minutes'";
             elif request.form["btn"] == "1 hour":
                 variableinfo["interval"] = "'1 hour'";
+            elif request.form["btn"] == "4 hours":
+                variableinfo["interval"] = "'4 hours'";
+            elif request.form["btn"] == "8 hours":
+                variableinfo["interval"] = "'8 hours'";
+            elif request.form["btn"] == "12 hours":
+                variableinfo["interval"] = "'12 hours'";
+            elif request.form["btn"] == "24 hours":
+                variableinfo["interval"] = "'24 hours'";
             elif request.form["btn"] == "Phase":
                 variableinfo["total"] = "false";
                 variableinfo["variable_statistic"] = "Max";
+                variableinfo["range"] = "'1 day'";
             elif request.form["btn"] == "Total":
                 variableinfo["total"] = "true";
+                variableinfo["range"] = "'1 day'";
             elif request.form["btn"] == "Power":
                 variableinfo["variable_plot"] = "Power";
                 variableinfo["variable_statistic"] = "Max";
@@ -339,6 +351,18 @@ def daily_report():
                         buttons["Avg"] = "false";
                     else:
                         buttons["Avg"] = "true";
+            elif request.form["btn"] == "Today":
+                variableinfo["range"] = "'1 day'";
+                variableinfo["interval"] = "'1 hour'";
+            elif request.form["btn"] == "- 3 days":
+                variableinfo["range"] = "'3 days'";
+                variableinfo["interval"] = "'8 hours'";
+            elif request.form["btn"] == "- 7 days":
+                variableinfo["range"] = "'7 days'";
+                variableinfo["interval"] = "'12 hours'";
+            elif request.form["btn"] == "- 10 days":
+                variableinfo["range"] = "'10 days'";
+                variableinfo["interval"] = "'12 hours'";
             else:
                 print("BUTTON ANALYSIS ERROR");
             
@@ -354,29 +378,71 @@ def daily_report():
             buttons = config_object["BUTTONS"];
         
         
-        if variableinfo["interval"] == "'30 seconds'":
-            second_btn = Markup("<input class='btn btn-secondary' type='submit' name = 'btn' role = 'button' value='30 seconds' style='background-color:#000000;' disabled>");
-            minute_btn = Markup("<input class='btn btn-outline-dark' type='submit' name = 'btn' role = 'button' value='1 minute'>");
-            halfhr_btn = Markup("<input class='btn btn-outline-dark' type='submit' name = 'btn' role = 'button' value='30 minutes'>");
-            hour_btn = Markup("<input class='btn btn-outline-dark' type='submit' name = 'btn' role = 'button' value='1 hour'>");
-        elif variableinfo["interval"] == "'1 minute'":
-            second_btn = Markup("<input class='btn btn-outline-dark' type='submit' name = 'btn' role = 'button' value='30 seconds'>");
-            minute_btn = Markup("<input class='btn btn-secondary' type='submit' name = 'btn' role = 'button' value='1 minute' style='background-color:#000000;' disabled>");
-            halfhr_btn = Markup("<input class='btn btn-outline-dark' type='submit' name = 'btn' role = 'button' value='30 minutes'>");
-            hour_btn = Markup("<input class='btn btn-outline-dark' type='submit' name = 'btn' role = 'button' value='1 hour'>");
-        elif variableinfo["interval"] == "'30 minutes'":
-            second_btn = Markup("<input class='btn btn-outline-dark' type='submit' name = 'btn' role = 'button' value='30 seconds'>");
-            minute_btn = Markup("<input class='btn btn-outline-dark' type='submit' name = 'btn' role = 'button' value='1 minute'>");
-            halfhr_btn = Markup("<input class='btn btn-secondary' type='submit' name = 'btn' role = 'button' value='30 minutes' style='background-color:#000000;' disabled>");
-            hour_btn = Markup("<input class='btn btn-outline-dark' type='submit' name = 'btn' role = 'button' value='1 hour'>");
-        elif variableinfo["interval"] == "'1 hour'":
-            second_btn = Markup("<input class='btn btn-outline-dark' type='submit' name = 'btn' role = 'button' value='30 seconds'>");
-            minute_btn = Markup("<input class='btn btn-outline-dark' type='submit' name = 'btn' role = 'button' value='1 minute'>");
-            halfhr_btn = Markup("<input class='btn btn-outline-dark' type='submit' name = 'btn' role = 'button' value='30 minutes'>");
-            hour_btn = Markup("<input class='btn btn-secondary' type='submit' name = 'btn' role = 'button' value='1 hour' style='background-color:#000000;' disabled>");
+        if variableinfo["range"] == "'1 day'":
+            size1_btn = Markup("<input class='btn btn-secondary' type='submit' name = 'btn' role = 'button' value='Today' style='background-color:#000000;' disabled>");
+            size2_btn = Markup("<input class='btn btn-outline-dark' type='submit' name = 'btn' role = 'button' value='- 3 days'>");
+            size3_btn = Markup("<input class='btn btn-outline-dark' type='submit' name = 'btn' role = 'button' value='- 7 days'>");
+            size4_btn = Markup("<input class='btn btn-outline-dark' type='submit' name = 'btn' role = 'button' value='- 10 days'>");
+            interval = "small";
+        elif variableinfo["range"] == "'3 days'":
+            size2_btn = Markup("<input class='btn btn-secondary' type='submit' name = 'btn' role = 'button' value='- 3 days' style='background-color:#000000;' disabled>");
+            size1_btn = Markup("<input class='btn btn-outline-dark' type='submit' name = 'btn' role = 'button' value='Today'>");
+            size3_btn = Markup("<input class='btn btn-outline-dark' type='submit' name = 'btn' role = 'button' value='- 7 days'>");
+            size4_btn = Markup("<input class='btn btn-outline-dark' type='submit' name = 'btn' role = 'button' value='- 10 days'>");
+        elif variableinfo["range"] == "'7 days'":
+            size3_btn = Markup("<input class='btn btn-secondary' type='submit' name = 'btn' role = 'button' value='- 7 days' style='background-color:#000000;' disabled>");
+            size2_btn = Markup("<input class='btn btn-outline-dark' type='submit' name = 'btn' role = 'button' value='- 3 days'>");
+            size1_btn = Markup("<input class='btn btn-outline-dark' type='submit' name = 'btn' role = 'button' value='Today'>");
+            size4_btn = Markup("<input class='btn btn-outline-dark' type='submit' name = 'btn' role = 'button' value='- 10 days'>");
+        elif variableinfo["range"] == "'10 days'":
+            size4_btn = Markup("<input class='btn btn-secondary' type='submit' name = 'btn' role = 'button' value='- 10 days' style='background-color:#000000;' disabled>");
+            size2_btn = Markup("<input class='btn btn-outline-dark' type='submit' name = 'btn' role = 'button' value='- 3 days'>");
+            size3_btn = Markup("<input class='btn btn-outline-dark' type='submit' name = 'btn' role = 'button' value='- 7 days'>");
+            size1_btn = Markup("<input class='btn btn-outline-dark' type='submit' name = 'btn' role = 'button' value='Today'>");
+        
+        if interval == "small":
+            if variableinfo["interval"] == "'30 seconds'":
+                interval1_btn = Markup("<input class='btn btn-secondary' type='submit' name = 'btn' role = 'button' value='30 seconds' style='background-color:#000000;' disabled>");
+                interval2_btn = Markup("<input class='btn btn-outline-dark' type='submit' name = 'btn' role = 'button' value='1 minute'>");
+                interval3_btn = Markup("<input class='btn btn-outline-dark' type='submit' name = 'btn' role = 'button' value='30 minutes'>");
+                interval4_btn = Markup("<input class='btn btn-outline-dark' type='submit' name = 'btn' role = 'button' value='1 hour'>");
+            elif variableinfo["interval"] == "'1 minute'":
+                interval1_btn = Markup("<input class='btn btn-outline-dark' type='submit' name = 'btn' role = 'button' value='30 seconds'>");
+                interval2_btn = Markup("<input class='btn btn-secondary' type='submit' name = 'btn' role = 'button' value='1 minute' style='background-color:#000000;' disabled>");
+                interval3_btn = Markup("<input class='btn btn-outline-dark' type='submit' name = 'btn' role = 'button' value='30 minutes'>");
+                interval4_btn = Markup("<input class='btn btn-outline-dark' type='submit' name = 'btn' role = 'button' value='1 hour'>");
+            elif variableinfo["interval"] == "'30 minutes'":
+                interval1_btn = Markup("<input class='btn btn-outline-dark' type='submit' name = 'btn' role = 'button' value='30 seconds'>");
+                interval2_btn = Markup("<input class='btn btn-outline-dark' type='submit' name = 'btn' role = 'button' value='1 minute'>");
+                interval3_btn = Markup("<input class='btn btn-secondary' type='submit' name = 'btn' role = 'button' value='30 minutes' style='background-color:#000000;' disabled>");
+                interval4_btn = Markup("<input class='btn btn-outline-dark' type='submit' name = 'btn' role = 'button' value='1 hour'>");
+            elif variableinfo["interval"] == "'1 hour'":
+                interval1_btn = Markup("<input class='btn btn-outline-dark' type='submit' name = 'btn' role = 'button' value='30 seconds'>");
+                interval2_btn = Markup("<input class='btn btn-outline-dark' type='submit' name = 'btn' role = 'button' value='1 minute'>");
+                interval3_btn = Markup("<input class='btn btn-outline-dark' type='submit' name = 'btn' role = 'button' value='30 minutes'>");
+                interval4_btn = Markup("<input class='btn btn-secondary' type='submit' name = 'btn' role = 'button' value='1 hour' style='background-color:#000000;' disabled>");
         else:
-            variableinfo["interval"] = "N/A";
-
+            if variableinfo["interval"] == "'4 hour'":
+                interval1_btn = Markup("<input class='btn btn-secondary' type='submit' name = 'btn' role = 'button' value='4 hour' style='background-color:#000000;' disabled>");
+                interval2_btn = Markup("<input class='btn btn-outline-dark' type='submit' name = 'btn' role = 'button' value='8 hours'>");
+                interval3_btn = Markup("<input class='btn btn-outline-dark' type='submit' name = 'btn' role = 'button' value='12 hours'>");
+                interval4_btn = Markup("<input class='btn btn-outline-dark' type='submit' name = 'btn' role = 'button' value='24 hours'>");
+            if variableinfo["interval"] == "'8 hours'":
+                interval1_btn = Markup("<input class='btn btn-outline-dark' type='submit' name = 'btn' role = 'button' value='4 hour'>");
+                interval2_btn = Markup("<input class='btn btn-secondary' type='submit' name = 'btn' role = 'button' value='8 hours' style='background-color:#000000;' disabled>");
+                interval3_btn = Markup("<input class='btn btn-outline-dark' type='submit' name = 'btn' role = 'button' value='12 hours'>");
+                interval4_btn = Markup("<input class='btn btn-outline-dark' type='submit' name = 'btn' role = 'button' value='24 hours'>");
+            if variableinfo["interval"] == "'12 hours'":
+                interval1_btn = Markup("<input class='btn btn-outline-dark' type='submit' name = 'btn' role = 'button' value='4 hour'>");
+                interval2_btn = Markup("<input class='btn btn-outline-dark' type='submit' name = 'btn' role = 'button' value='8 hours'>");
+                interval3_btn = Markup("<input class='btn btn-secondary' type='submit' name = 'btn' role = 'button' value='12 hours' style='background-color:#000000;' disabled>");
+                interval4_btn = Markup("<input class='btn btn-outline-dark' type='submit' name = 'btn' role = 'button' value='24 hours'>");
+            if variableinfo["interval"] == "'24 hours'":
+                interval1_btn = Markup("<input class='btn btn-outline-dark' type='submit' name = 'btn' role = 'button' value='4 hour'>");
+                interval2_btn = Markup("<input class='btn btn-outline-dark' type='submit' name = 'btn' role = 'button' value='8 hours'>");
+                interval3_btn = Markup("<input class='btn btn-outline-dark' type='submit' name = 'btn' role = 'button' value='12 hours'>");    
+                interval4_btn = Markup("<input class='btn btn-secondary' type='submit' name = 'btn' role = 'button' value='24 hours' style='background-color:#000000;' disabled>");
+                
         set_btn = 1;
         
         
@@ -592,6 +658,7 @@ def daily_report():
                 "variable_statistic" : "Max",
                 "interval" : "'1 hour'",
                 "total" : "false",
+                "range" : "'1 day'",
                 "debugging" : "false"
             };
             config_object["BUTTONS"] = {
@@ -653,10 +720,14 @@ def daily_report():
             max_btn = Markup("<input class='btn btn-secondary' type='submit' name = 'btn' role = 'button' value='Max' style='background-color:#000000;' disabled>");
             min_btn = Markup("<input class='btn btn-outline-dark' type='submit' name = 'btn' role = 'button' value='Min'>");
             avg_btn = Markup("<input class='btn btn-outline-dark' type='submit' name = 'btn' role = 'button' value='Avg'>");
-            second_btn = Markup("<input class='btn btn-outline-dark' type='submit' name = 'btn' role = 'button' value='30 seconds'>");
-            hour_btn = Markup("<input class='btn btn-secondary' type='submit' name = 'btn' role = 'button' value='1 hour' style='background-color:#000000;' disabled>");
-            halfhr_btn = Markup("<input class='btn btn-outline-dark' type='submit' name = 'btn' role = 'button' value='30 minutes'>");
-            minute_btn = Markup("<input class='btn btn-outline-dark' type='submit' name = 'btn' role = 'button' value='1 minute'>");
+            interval1_btn = Markup("<input class='btn btn-outline-dark' type='submit' name = 'btn' role = 'button' value='30 seconds'>");
+            interval4_btn = Markup("<input class='btn btn-secondary' type='submit' name = 'btn' role = 'button' value='1 hour' style='background-color:#000000;' disabled>");
+            interval3_btn = Markup("<input class='btn btn-outline-dark' type='submit' name = 'btn' role = 'button' value='30 minutes'>");
+            interval2_btn = Markup("<input class='btn btn-outline-dark' type='submit' name = 'btn' role = 'button' value='1 minute'>");
+            size1_btn = Markup("<input class='btn btn-secondary' type='submit' name = 'btn' role = 'button' value='Today' style='background-color:#000000;' disabled>");
+            size2_btn = Markup("<input class='btn btn-outline-dark' type='submit' name = 'btn' role = 'button' value='- 3 days'>");
+            size3_btn = Markup("<input class='btn btn-outline-dark' type='submit' name = 'btn' role = 'button' value='- 7 days'>");
+            size4_btn = Markup("<input class='btn btn-outline-dark' type='submit' name = 'btn' role = 'button' value='- 10 days'>");
         
         set_btn = 0
         
@@ -713,10 +784,14 @@ def daily_report():
             max_btn = max_btn,
             min_btn = min_btn,
             avg_btn = avg_btn,
-            second_btn = second_btn,
-            minute_btn = minute_btn,
-            hour_btn = hour_btn,
-            halfhr_btn = halfhr_btn,
+            interval1_btn = interval1_btn,
+            interval2_btn = interval2_btn,
+            interval4_btn = interval4_btn,
+            interval3_btn = interval3_btn,
+            size1_btn = size1_btn,
+            size2_btn = size2_btn,
+            size3_btn = size3_btn,
+            size4_btn = size4_btn,
             elapsed_time = elapsed_time,
             description = description,
             min_voltage = min_voltage,
@@ -803,7 +878,7 @@ def GetReportData(day):
         #cursor.execute(query);
         #len_a = 0; 
         
-        (phasea, len_a) = status_notification.store_data("phasea", phasea, variableinfo["interval"], day)
+        (phasea, len_a) = status_notification.store_data("phasea", phasea, variableinfo["interval"], variableinfo["range"], day)
         
         enda = time.time()
         elapsed_timea = enda - starta
@@ -837,7 +912,7 @@ def GetReportData(day):
         #cursor.execute(query);
         #len_b = 0; 
         
-        (phaseb, len_b) = status_notification.store_data("phaseb", phaseb, variableinfo["interval"], day)
+        (phaseb, len_b) = status_notification.store_data("phaseb", phaseb, variableinfo["interval"], variableinfo["range"], day)
         
         endb = time.time()
         elapsed_timeb = endb - startb
@@ -869,7 +944,7 @@ def GetReportData(day):
         #cursor.execute(query); 
         #len_c = 0
         
-        (phasec, len_c) = status_notification.store_data("phasec", phasec, variableinfo["interval"], day)
+        (phasec, len_c) = status_notification.store_data("phasec", phasec, variableinfo["interval"], variableinfo["range"], day)
         
         endc = time.time()
         elapsed_timec = endc - startc
