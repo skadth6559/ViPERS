@@ -166,6 +166,30 @@
 				<br>
 				<p class="font-weight-bold">Select time interval:&nbsp;&nbsp; {{size1_btn}} {{size2_btn}} {{size3_btn}} {{size4_btn}}</p>
 				<p class="font-weight-bold">Select resolution:&nbsp;&nbsp; {{interval1_btn}} {{interval2_btn}} {{interval3_btn}} {{interval4_btn}}</p>
+				
+				<!--Button trigger modal-->
+				<p style="text-align:right;">{{savedefault_btn}} {{reset_btn}}</p>
+				<!--Modal-->
+				<div class="modal fade" id="exampleModal" tabindex="-1" role="dialog" aria-labelledby="exampleModalLabel" aria-hidden="true">
+					<div class="modal-dialog" role="document">
+						<div class="modal-content">
+							<div class="modal-header">
+								<h5 class="modal-title" id="exampleModalLabel">Confirm</h5>
+								<button type = "button" class="close" data-dismiss="modal" aria-label="Close">
+									<span aria-hidden="true">&times;</span>
+								</button>
+							</div>
+							<div class="modal_body">
+								&nbsp;&nbsp;&nbsp;&nbsp;Do you wish to reset to the default settings?
+							</div>
+							<div class="modal-footer">
+								<button type="button" class="btn btn-secondary" data-dismiss="modal">No</button>
+								<!--<button type="button" class="btn btn-primary">Save changes</button>-->
+								{{confirm_btn}}
+							</div>
+						</div>
+					</div>
+				</div>
 			</form>
 		</div>
 	</div> 
