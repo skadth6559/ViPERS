@@ -27,6 +27,8 @@ from dotenv import dotenv_values
 
 from configparser import ConfigParser
 import time
+import dateutil
+from dateutil.parser import parse
 
 from webapp.views import graphs
 
@@ -38,6 +40,11 @@ elapsed_timecal = 0
 elapsed_timep = 0
 
 import status_notification
+import csv
+import random
+#shashanks api
+#from apiclass import db_retrieve, get_fields, get_tables
+import apiclass
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
@@ -295,11 +302,56 @@ def daily_report():
         buttons = config_object["BUTTONS"]
         
         #set variables
-        if "btn" in request.form:
-            if request.form["btn"] == "Reset":
-                reset = "true";
-                variableinfo["debugging"] = "false";
-            if request.form["btn"] == "30 seconds":
+        if "btn" in request.form or request.method == "GET":
+            if request.method == "GET" or request.form["btn"] == "Reset":                
+                config_object = ConfigParser();
+                config_object.read("default.ini");
+                defvariableinfo = config_object["VARIABLEINFO"];
+                defbuttons = config_object["BUTTONS"];
+                
+                variableinfo["variable_plot"] = defvariableinfo["variable_plot"];
+                variableinfo["variable_statistic"] = defvariableinfo["variable_statistic"];
+                variableinfo["interval"] = defvariableinfo["interval"];
+                variableinfo["total"] = defvariableinfo["total"];
+                variableinfo["range"] = defvariableinfo["range"];
+                variableinfo["debugging"] = defvariableinfo["debugging"];
+                buttons["phase"] = defbuttons["phase"];
+                buttons["total"] = defbuttons["total"];
+                buttons["power"] = defbuttons["power"];
+                buttons["voltage"] = defbuttons["voltage"];
+                buttons["voltage thd"] = defbuttons["voltage thd"];
+                buttons["max"] = defbuttons["max"];
+                buttons["min"] = defbuttons["min"];
+                buttons["avg"] = defbuttons["avg"];
+                buttons["set"] = defbuttons["set"];
+                
+            elif request.form["btn"] == "Save":
+            
+                config_object = ConfigParser();
+                config_object.read("default.ini");
+                defvariableinfo = config_object["VARIABLEINFO"];
+                defbuttons = config_object["BUTTONS"];
+                
+                defvariableinfo["variable_plot"] = variableinfo["variable_plot"];
+                defvariableinfo["variable_statistic"] = variableinfo["variable_statistic"];
+                defvariableinfo["interval"] = variableinfo["interval"];
+                defvariableinfo["total"] = variableinfo["total"];
+                defvariableinfo["range"] = variableinfo["range"];
+                defvariableinfo["debugging"] = variableinfo["debugging"];
+                defbuttons["phase"] = buttons["phase"];
+                defbuttons["total"] = buttons["total"];
+                defbuttons["power"] = buttons["power"];
+                defbuttons["voltage"] = buttons["voltage"];
+                defbuttons["voltage thd"] = buttons["voltage thd"];
+                defbuttons["max"] = buttons["max"];
+                defbuttons["min"] = buttons["min"];
+                defbuttons["avg"] = buttons["avg"];
+                defbuttons["set"] = buttons["set"];
+                
+                with open('default.ini', 'w') as conf:
+                    config_object.write(conf);
+                
+            elif request.form["btn"] == "30 seconds":
                 variableinfo["interval"] = "'30 seconds'";
             elif request.form["btn"] == "1 minute":
                 variableinfo["interval"] = "'1 minute'";
@@ -315,11 +367,11 @@ def daily_report():
                 variableinfo["interval"] = "'12 hours'";
             elif request.form["btn"] == "24 hours":
                 variableinfo["interval"] = "'24 hours'";
-            elif request.form["btn"] == "Phase":
+            elif request.form["btn"] == "On":
                 variableinfo["total"] = "false";
                 variableinfo["variable_statistic"] = "Max";
                 variableinfo["range"] = "'1 day'";
-            elif request.form["btn"] == "Total":
+            elif request.form["btn"] == "Off":
                 variableinfo["total"] = "true";
                 variableinfo["range"] = "'1 day'";
             elif request.form["btn"] == "Power":
@@ -454,42 +506,37 @@ def daily_report():
             
             
             if variableinfo["total"] == "false":
-                phasepow_btn = Markup("<input class='btn btn-secondary' type='submit' name = 'btn' role = 'button' value='Phase' style='background-color:#000000;' disabled>");
-                totalpow_btn = Markup("<input class='btn btn-outline-dark' type='submit' name = 'btn' role = 'button' value='Total'>");
+                phasepow_btn = Markup("<input class='btn btn-secondary' type='submit' name = 'btn' role = 'button' value='On' style='background-color:#000000;' disabled>");
+                totalpow_btn = Markup("<input class='btn btn-outline-dark' type='submit' name = 'btn' role = 'button' value='Off' data_toggle='tooltip' data-placement='top' title='View cumulative power of all phases'>");
                 buttons["Phase"] = "disabled";
                 buttons["Set"] = "false";
                 buttons["Phase"] = "disabled";
                 buttons["Total"] = "enabled";
             elif variableinfo["total"] == "true":
-                phasepow_btn = Markup("<input class='btn btn-outline-dark' type='submit' name = 'btn' role = 'button' value='Phase'>");
-                totalpow_btn = Markup("<input class='btn btn-secondary' type='submit' name = 'btn' role = 'button' value='Total'  style='background-color:#000000;' disabled>");
+                phasepow_btn = Markup("<input class='btn btn-outline-dark' type='submit' name = 'btn' role = 'button' value='On' data_toggle='tooltip' data-placement='top' title='View split/tri-phase power'>");
+                totalpow_btn = Markup("<input class='btn btn-secondary' type='submit' name = 'btn' role = 'button' value='Off'  style='background-color:#000000;' disabled>");
                 buttons["Total"] = "disabled";
                 buttons["Phase"] = "enabled";
                 buttons["Total"] = "disabled";
             
-            if ("btn" in request.form and (request.form["btn"] == "Total" or request.form["btn"] == "Phase")) or variableinfo["variable_plot"] == "Power":
+            if ("btn" in request.form and (request.form["btn"] == "Off" or request.form["btn"] == "On")) or variableinfo["variable_plot"] == "Power":
                 if variableinfo["total"] == "false":
-                    #variableinfo["variable_statistic"] = "Max";
                     max_btn = Markup("<input class='btn btn-secondary' type='submit' name = 'btn' role = 'button' value='Max' disabled style='background-color:#000000;'>");
                     min_btn = Markup("<input class='btn btn-outline-dark' type='submit' name = 'btn' role = 'button' value='Min'>");
                     avg_btn = Markup("<input class='btn btn-outline-dark' type='submit' name = 'btn' role = 'button' value='Avg'>");
                     voltage_btn = Markup("<input class='btn btn-outline-dark' type='submit' name = 'btn' role = 'button' value='Voltage'>");
                     thd_btn = Markup("<input class='btn btn-outline-dark' type='submit' name = 'btn' role = 'button' value='Voltage THD'>");
-                    phasepow_btn = Markup("<input class='btn btn-secondary' type='submit' name = 'btn' role = 'button' value='Phase' style='background-color:#000000;' disabled>");
-                    totalpow_btn = Markup("<input class='btn btn-outline-dark' type='submit' name = 'btn' role = 'button' value='Total'>");
                 else:
-                    #variableinfo["variable_statistic"] = "Max";
+                    #Activate all 3 buttons if total power is being plotted
                     if buttons["Set"] == "false":
                         buttons["Max"] = "true";
                         buttons["Min"] = "true";
                         buttons["Avg"] = "true";
                         buttons["Set"] = "true";
                     buttons["Power"] = "disabled";
+                    #Activates other 2 variable buttons
                     if buttons["Voltage"] == "disabled": buttons["Voltage"] = "enabled";
                     if buttons["Voltage THD"] == "disabled": buttons["Voltage THD"] = "enabled";
-                    max_btn = Markup("<input class='btn btn-outline-dark' type='submit' name = 'btn' role = 'button' value='Max'>");
-                    min_btn = Markup("<input class='btn btn-outline-dark' type='submit' name = 'btn' role = 'button' value='Min'>");
-                    avg_btn = Markup("<input class='btn btn-outline-dark' type='submit' name = 'btn' role = 'button' value='Avg'>");
                     voltage_btn = "";
                     thd_btn = "";
                 
@@ -497,19 +544,6 @@ def daily_report():
                 variableinfo["variable_plot"] = "Power";
             
             if variableinfo["variable_plot"] == "Voltage":
-                if variableinfo["total"] == "false":
-                    #variableinfo["variable_statistic"] = "Max";
-                    max_btn = Markup("<input class='btn btn-secondary' type='submit' name = 'btn' role = 'button' value='Max' disabled style='background-color:#000000;'>");
-                    min_btn = Markup("<input class='btn btn-outline-dark' type='submit' name = 'btn' role = 'button' value='Min'>");
-                    avg_btn = Markup("<input class='btn btn-outline-dark' type='submit' name = 'btn' role = 'button' value='Avg'>");
-                    phasepow_btn = Markup("<input class='btn btn-secondary' type='submit' name = 'btn' role = 'button' value='Phase' style='background-color:#000000;' disabled>");
-                    totalpow_btn = Markup("<input class='btn btn-outline-dark' type='submit' name = 'btn' role = 'button' value='Total'>");
-                else:
-                    #button doesn't exist here
-                    max_btn = "";
-                    min_btn = "";
-                    avg_btn = "";
-            
                 power_btn = Markup("<input class='btn btn-outline-dark' type='submit' name = 'btn' role = 'button' value='Power'>");
                 voltage_btn = Markup("<input class='btn btn-secondary' type='submit' name = 'btn' role = 'button' value='Voltage' disabled style='background-color:#000000;'>");
                 thd_btn = Markup("<input class='btn btn-outline-dark' type='submit' name = 'btn' role = 'button' value='Voltage THD'>");
@@ -519,20 +553,6 @@ def daily_report():
                 if buttons["Voltage THD"] == "disabled": buttons["Voltage THD"] = "enabled";
                 
             if variableinfo["variable_plot"] == "Voltage THD":
-                if variableinfo["total"] == "false":
-                    #variableinfo["variable_statistic"] = "Max";
-                    max_btn = Markup("<input class='btn btn-secondary' type='submit' name = 'btn' role = 'button' value='Max' disabled style='background-color:#000000;'>");
-                    min_btn = Markup("<input class='btn btn-outline-dark' type='submit' name = 'btn' role = 'button' value='Min'>");
-                    avg_btn = Markup("<input class='btn btn-outline-dark' type='submit' name = 'btn' role = 'button' value='Avg'>");
-                    phasepow_btn = Markup("<input class='btn btn-secondary' type='submit' name = 'btn' role = 'button' value='Phase' style='background-color:#000000;' disabled>");
-                    totalpow_btn = Markup("<input class='btn btn-outline-dark' type='submit' name = 'btn' role = 'button' value='Total'>");
-                else:
-                    #button doesn't exist here
-                    variableinfo["variable_statistic"] = "N/A";
-                    max_btn = "";
-                    min_btn = "";
-                    avg_btn = "";
-            
                 power_btn = Markup("<input class='btn btn-outline-dark' type='submit' name = 'btn' role = 'button' value='Power'>");
                 voltage_btn = Markup("<input class='btn btn-outline-dark' type='submit' name = 'btn' role = 'button' value='Voltage'>");
                 thd_btn = Markup("<input class='btn btn-secondary' type='submit' name = 'btn' role = 'button' value='Voltage THD' disabled style='background-color:#000000;'>");
@@ -541,7 +561,7 @@ def daily_report():
                 if buttons["Power"] == "disabled": buttons["Power"] = "enabled";
                 if buttons["Voltage THD"] == "disabled": buttons["Voltage THD"] = "enabled";
                 
-            #write variable plot changes back to config file
+            #Save changes to config file
             with open('config.ini', 'w') as conf:
                 config_object.write(conf)
             
@@ -552,97 +572,32 @@ def daily_report():
             variableinfo = config_object["VARIABLEINFO"]
             buttons = config_object["BUTTONS"]
             
+            #Set up buttons for Max, Min, Avg
             if variableinfo["variable_statistic"] == "Max":
-                if variableinfo["total"] == "false":
-                    if variableinfo["variable_plot"] == "Power":
-                        power_btn = Markup("<input class='btn btn-secondary' type='submit' name = 'btn' role = 'button' value='Power' disabled style='background-color:#000000;'>");
-                        voltage_btn = Markup("<input class='btn btn-outline-dark' type='submit' name = 'btn' role = 'button' value='Voltage'>");
-                        thd_btn = Markup("<input class='btn btn-outline-dark' type='submit' name = 'btn' role = 'button' value='Voltage THD'>");
-                    elif variableinfo["variable_plot"] == "Voltage":
-                        power_btn = Markup("<input class='btn btn-outline-dark' type='submit' name = 'btn' role = 'button' value='Power'>");
-                        voltage_btn = Markup("<input class='btn btn-secondary' type='submit' name = 'btn' role = 'button' value='Voltage' disabled style='background-color:#000000;'>");
-                        thd_btn = Markup("<input class='btn btn-outline-dark' type='submit' name = 'btn' role = 'button' value='Voltage THD'>");
-                    elif variableinfo["variable_plot"] == "Voltage THD":
-                        power_btn = Markup("<input class='btn btn-outline-dark' type='submit' name = 'btn' role = 'button' value='Power'>");
-                        voltage_btn = Markup("<input class='btn btn-outline-dark' type='submit' name = 'btn' role = 'button' value='Voltage'>");
-                        thd_btn = Markup("<input class='btn btn-secondary' type='submit' name = 'btn' role = 'button' value='Voltage THD' disabled style='background-color:#000000;'>");
-                    
+                if variableinfo["total"] == "false":                    
                     max_btn = Markup("<input class='btn btn-secondary' type='submit' name = 'btn' role = 'button' value='Max' disabled style='background-color:#000000;'>");
-                    min_btn = Markup("<input class='btn btn-outline-dark' type='submit' name = 'btn' role = 'button' value='Min'>");
-                    avg_btn = Markup("<input class='btn btn-outline-dark' type='submit' name = 'btn' role = 'button' value='Avg'>");
-                    phasepow_btn = Markup("<input class='btn btn-secondary' type='submit' name = 'btn' role = 'button' value='Phase' style='background-color:#000000;' disabled>");
-                    totalpow_btn = Markup("<input class='btn btn-outline-dark' type='submit' name = 'btn' role = 'button' value='Total'>");
                 else:
-                    phasepow_btn = Markup("<input class='btn btn-outline-dark' type='submit' name = 'btn' role = 'button' value='Phase'>");
-                    totalpow_btn = Markup("<input class='btn btn-secondary' type='submit' name = 'btn' role = 'button' value='Total'  style='background-color:#000000;' disabled>");
-                    power_btn = Markup("<input class='btn btn-secondary' type='submit' name = 'btn' role = 'button' value='Power' disabled style='background-color:#000000;'>");
-                    max_btn = Markup("<input class='btn btn-outline-dark' type='submit' name = 'btn' role = 'button' value='Max'>");
-                    min_btn = Markup("<input class='btn btn-outline-dark' type='submit' name = 'btn' role = 'button' value='Min'>");
-                    avg_btn = Markup("<input class='btn btn-outline-dark' type='submit' name = 'btn' role = 'button' value='Avg'>");
-                    voltage_btn = "";
-                    thd_btn = "";
+                    max_btn = Markup("<input class='btn btn-outline-dark' type='submit' name = 'btn' role = 'button' value='Max'>");                   
+                min_btn = Markup("<input class='btn btn-outline-dark' type='submit' name = 'btn' role = 'button' value='Min'>");
+                avg_btn = Markup("<input class='btn btn-outline-dark' type='submit' name = 'btn' role = 'button' value='Avg'>");            
             
             if variableinfo["variable_statistic"] == "Min":
-                if variableinfo["total"] == "false":
-                    if variableinfo["variable_plot"] == "Power":
-                        power_btn = Markup("<input class='btn btn-secondary' type='submit' name = 'btn' role = 'button' value='Power' disabled style='background-color:#000000;'>");
-                        voltage_btn = Markup("<input class='btn btn-outline-dark' type='submit' name = 'btn' role = 'button' value='Voltage'>");
-                        thd_btn = Markup("<input class='btn btn-outline-dark' type='submit' name = 'btn' role = 'button' value='Voltage THD'>");
-                    elif variableinfo["variable_plot"] == "Voltage":
-                        power_btn = Markup("<input class='btn btn-outline-dark' type='submit' name = 'btn' role = 'button' value='Power'>");
-                        voltage_btn = Markup("<input class='btn btn-secondary' type='submit' name = 'btn' role = 'button' value='Voltage' disabled style='background-color:#000000;'>");
-                        thd_btn = Markup("<input class='btn btn-outline-dark' type='submit' name = 'btn' role = 'button' value='Voltage THD'>");
-                    elif variableinfo["variable_plot"] == "Voltage THD":
-                        power_btn = Markup("<input class='btn btn-outline-dark' type='submit' name = 'btn' role = 'button' value='Power'>");
-                        voltage_btn = Markup("<input class='btn btn-outline-dark' type='submit' name = 'btn' role = 'button' value='Voltage'>");
-                        thd_btn = Markup("<input class='btn btn-secondary' type='submit' name = 'btn' role = 'button' value='Voltage THD' disabled style='background-color:#000000;'>");
-                    
-                    max_btn = Markup("<input class='btn btn-outline-dark' type='submit' name = 'btn' role = 'button' value='Max'>");
+                if variableinfo["total"] == "false":                   
                     min_btn = Markup("<input class='btn btn-secondary' type='submit' name = 'btn' role = 'button' value='Min' disabled style='background-color:#000000;'>");
-                    avg_btn = Markup("<input class='btn btn-outline-dark' type='submit' name = 'btn' role = 'button' value='Avg'>");
-                    phasepow_btn = Markup("<input class='btn btn-secondary' type='submit' name = 'btn' role = 'button' value='Phase' style='background-color:#000000;' disabled>");
-                    totalpow_btn = Markup("<input class='btn btn-outline-dark' type='submit' name = 'btn' role = 'button' value='Total'>");
                 else:
-                    phasepow_btn = Markup("<input class='btn btn-outline-dark' type='submit' name = 'btn' role = 'button' value='Phase'>");
-                    totalpow_btn = Markup("<input class='btn btn-secondary' type='submit' name = 'btn' role = 'button' value='Total'  style='background-color:#000000;' disabled>");
-                    power_btn = Markup("<input class='btn btn-secondary' type='submit' name = 'btn' role = 'button' value='Power' disabled style='background-color:#000000;'>");
-                    max_btn = Markup("<input class='btn btn-outline-dark' type='submit' name = 'btn' role = 'button' value='Max'>");
-                    min_btn = Markup("<input class='btn btn-outline-dark' type='submit' name = 'btn' role = 'button' value='Min'>");
-                    avg_btn = Markup("<input class='btn btn-outline-dark' type='submit' name = 'btn' role = 'button' value='Avg'>");
-                    voltage_btn = "";
-                    thd_btn = "";                    
+                    min_btn = Markup("<input class='btn btn-outline-dark' type='submit' name = 'btn' role = 'button' value='Min'>");   
+                max_btn = Markup("<input class='btn btn-outline-dark' type='submit' name = 'btn' role = 'button' value='Max'>");
+                avg_btn = Markup("<input class='btn btn-outline-dark' type='submit' name = 'btn' role = 'button' value='Avg'>");
                 
             if variableinfo["variable_statistic"] == "Avg":
                 if variableinfo["total"] == "false":
-                    if variableinfo["variable_plot"] == "Power":
-                        power_btn = Markup("<input class='btn btn-secondary' type='submit' name = 'btn' role = 'button' value='Power' disabled style='background-color:#000000;'>");
-                        voltage_btn = Markup("<input class='btn btn-outline-dark' type='submit' name = 'btn' role = 'button' value='Voltage'>");
-                        thd_btn = Markup("<input class='btn btn-outline-dark' type='submit' name = 'btn' role = 'button' value='Voltage THD'>");
-                    elif variableinfo["variable_plot"] == "Voltage":
-                        power_btn = Markup("<input class='btn btn-outline-dark' type='submit' name = 'btn' role = 'button' value='Power'>");
-                        voltage_btn = Markup("<input class='btn btn-secondary' type='submit' name = 'btn' role = 'button' value='Voltage' disabled style='background-color:#000000;'>");
-                        thd_btn = Markup("<input class='btn btn-outline-dark' type='submit' name = 'btn' role = 'button' value='Voltage THD'>");
-                    elif variableinfo["variable_plot"] == "Voltage THD":
-                        power_btn = Markup("<input class='btn btn-outline-dark' type='submit' name = 'btn' role = 'button' value='Power'>");
-                        voltage_btn = Markup("<input class='btn btn-outline-dark' type='submit' name = 'btn' role = 'button' value='Voltage'>");
-                        thd_btn = Markup("<input class='btn btn-secondary' type='submit' name = 'btn' role = 'button' value='Voltage THD' disabled style='background-color:#000000;'>");
-                    
-                    max_btn = Markup("<input class='btn btn-outline-dark' type='submit' name = 'btn' role = 'button' value='Max'>");
-                    min_btn = Markup("<input class='btn btn-outline-dark' type='submit' name = 'btn' role = 'button' value='Min'>");
                     avg_btn = Markup("<input class='btn btn-secondary' type='submit' name = 'btn' role = 'button' value='Avg' disabled style='background-color:#000000;'>");
-                    phasepow_btn = Markup("<input class='btn btn-secondary' type='submit' name = 'btn' role = 'button' value='Phase' style='background-color:#000000;' disabled>");
-                    totalpow_btn = Markup("<input class='btn btn-outline-dark' type='submit' name = 'btn' role = 'button' value='Total'>");
                 else:
-                    phasepow_btn = Markup("<input class='btn btn-outline-dark' type='submit' name = 'btn' role = 'button' value='Phase'>");
-                    totalpow_btn = Markup("<input class='btn btn-secondary' type='submit' name = 'btn' role = 'button' value='Total'  style='background-color:#000000;' disabled>");
-                    power_btn = Markup("<input class='btn btn-secondary' type='submit' name = 'btn' role = 'button' value='Power' disabled style='background-color:#000000;'>");
-                    max_btn = Markup("<input class='btn btn-outline-dark' type='submit' name = 'btn' role = 'button' value='Max'>");
-                    min_btn = Markup("<input class='btn btn-outline-dark' type='submit' name = 'btn' role = 'button' value='Min'>");
                     avg_btn = Markup("<input class='btn btn-outline-dark' type='submit' name = 'btn' role = 'button' value='Avg'>");
-                    voltage_btn = "";
-                    thd_btn = "";
+                max_btn = Markup("<input class='btn btn-outline-dark' type='submit' name = 'btn' role = 'button' value='Max'>");
+                min_btn = Markup("<input class='btn btn-outline-dark' type='submit' name = 'btn' role = 'button' value='Min'>");
         
-        #write variable statistic changes back to config file
+        #Save changes to config file
         with open('config.ini', 'w') as conf:
             config_object.write(conf)
             
@@ -657,7 +612,7 @@ def daily_report():
         set_btn = 1
 
     if request.method == "GET" or set_btn == 1:    
-        if (request.method == "GET" and variableinfo["debugging"] == "false") or reset=="true":
+        if (request.method == "GET" and variableinfo["debugging"] == "false"):
             #config file initialization
             config_object = ConfigParser();
             config_object["VARIABLEINFO"] = {
@@ -709,6 +664,11 @@ def daily_report():
             logger.info(e); 
             logger.info('Error in timezone.  Using UTC time instead.');
             date_to_grab = display_date.strftime('%m-%d-%Y 23:59:59'); #just use utc.
+        
+        #Subtracting a day from the date
+        #date_to_grab = datetime.strptime(date_to_grab, '%m-%d-%Y %H:%M:%S')
+        #date_to_grab = date_to_grab - timedelta(days = 0)
+        
         logger.info(date_to_grab);
         (split_phase, month_avg, phasea_avg, phaseb_avg, phasec_avg, a_percent, b_percent, c_percent, min_power, max_power, total_power, power_msg, min_voltage, max_voltage, min_thd, max_thd, avg_thd, avg_volt, bk_script, bk_div) = GetReportData(date_to_grab);     
         date_form.date.data = display_date; 
@@ -719,8 +679,8 @@ def daily_report():
         
         #default button settings (change if default config settings are changed)
         if (request.method == "GET" and variableinfo["debugging"] == "false") or reset == "true":
-            phasepow_btn = Markup("<input class='btn btn-secondary' type='submit' name = 'btn' role = 'button' value='Phase' style='background-color:#000000;' disabled>");
-            totalpow_btn = Markup("<input class='btn btn-outline-dark' type='submit' name = 'btn' role = 'button' value='Total'>");
+            phasepow_btn = Markup("<input class='btn btn-secondary' type='submit' name = 'btn' role = 'button' value='On' style='background-color:#000000;' disabled>");
+            totalpow_btn = Markup("<input class='btn btn-outline-dark' type='submit' name = 'btn' role = 'button' value='Off'>");
             power_btn = Markup("<input class='btn btn-secondary' type='submit' name = 'btn' role = 'button' value='Power' style='background-color:#000000;' disabled>");
             voltage_btn = Markup("<input class='btn btn-outline-dark' type='submit' name = 'btn' role = 'button' value='Voltage'>");
             thd_btn = Markup("<input class='btn btn-outline-dark' type='submit' name = 'btn' role = 'button' value='Voltage THD'>");        
@@ -762,7 +722,8 @@ def daily_report():
         
         confirm_btn = Markup("<input class='btn btn-primary' type='submit' name = 'btn' role = 'button' value='Reset' style='background-color:#DB1D1D'>");
         reset_btn = Markup("<button type='button' class='btn btn-primary' data-toggle='modal' data-target='#exampleModal' style='background-color:#DB1D1D'>Reset</button>");
-        savedefault_btn = Markup("<input class='btn btn-primary' type='submit' name = 'btn' role = 'button' value='Save as Default' style='background-color:#008000'>");
+        savedefault_btn = Markup("<button type='button' class='btn btn-primary' data-toggle='modal' data-target='#saveModal' style='background-color:#008000'>Save</button>");
+        confirmsave_btn = Markup("<input class='btn btn-primary' type='submit' name = 'btn' role = 'button' value='Save' style='background-color:#008000'>");
 
         reset = "false";
         variableinfo["debugging"] = "true";
@@ -807,6 +768,7 @@ def daily_report():
             size4_btn = size4_btn,
             reset_btn = reset_btn,
             confirm_btn = confirm_btn,
+            confirmsave_btn = confirmsave_btn,
             savedefault_btn = savedefault_btn,
             elapsed_time = elapsed_time,
             description = description,
@@ -874,8 +836,7 @@ def GetReportData(day):
         
         #(phasea, phaseb, phasec) = status_notification.create_phase_objects()
         
-        #start query time
-        startq = time.time()
+        
         
         #first get monthly avg.  
         query = "SELECT avg(avg_total) as power FROM hourlypower WHERE time > TIMESTAMP '" + str(day) + "' - INTERVAL '30 days' AND time < TIMESTAMP '" + str(day) + "'; ";
@@ -883,9 +844,10 @@ def GetReportData(day):
         month = cursor.fetchone();
         month_avg = round(month['power'],2);
        
+        #start query time
+        startq = time.time()
         
         #query phases a,b,c 
-        
         #measuring how long query takes
         starta = time.time()
         
@@ -899,9 +861,7 @@ def GetReportData(day):
         enda = time.time()
         elapsed_timea = enda - starta
         
-        
-        
-        
+        #Original code
         for r in cursor.fetchall(): 
             #make time in local timezone.
             t = r['bucket'].replace(tzinfo=pytz.utc).astimezone(tz); 
@@ -915,7 +875,72 @@ def GetReportData(day):
             phasea['avg_thd'].append(r['avg_thd']);
             phasea['min_thd'].append(r['min_thd']);
             phasea['max_thd'].append(r['max_thd']); 
-            len_a += 1; 
+            len_a += 1;
+        
+        
+        endss = time.time()
+        elapsed_timess = endss - startss
+        
+        
+        #using numpy.random.rand
+        """first_date = datetime(2022, 7, 28, 1, 1, 1, 0, pytz.utc);
+        phasea['time'] = first_date + np.arange(1400) * timedelta(seconds=60);
+        nparray = np.random.rand(9, 1400);
+        phasea['avg_power'] = nparray[0];
+        phasea['min_power'] = nparray[1];
+        phasea['max_power'] = nparray[2];
+        phasea['avg_volt'] = nparray[3];
+        phasea['min_volt'] = nparray[4];
+        phasea['max_volt'] = nparray[5];
+        phasea['avg_thd'] = nparray[6];
+        phasea['min_thd'] = nparray[7];
+        phasea['max_thd'] = nparray[8];"""
+        
+
+        """#Generating 2000 points of fake data for testing purposes
+        i = 1400
+        thedate = datetime(2022, 7, 28, 1, 1, 1, 0, pytz.utc)
+        while (i > 0):
+            #deal with time first
+            phasea['time'].append(thedate);
+            thedate += timedelta(seconds = 1);
+            
+            phasea['avg_power'].append(random.randint(1, 1000));
+            phasea['min_power'].append(random.randint(1, 1000));
+            phasea['max_power'].append(random.randint(1, 1000));
+            phasea['max_volt'].append(random.randint(115, 125));
+            phasea['min_volt'].append(random.randint(115, 125));
+            phasea['avg_volt'].append(random.randint(115, 125));
+            phasea['max_thd'].append(random.uniform(0.001, 0.01));
+            phasea['min_thd'].append(random.uniform(0.001, 0.01));
+            phasea['avg_thd'].append(random.uniform(0.001, 0.01));
+            len_a += 1;
+            i -= 1;"""
+            
+        #trying to read from csv and set up the phasea object
+        """with open('local_psql_data.csv') as csv_file:
+            csv_reader = csv.reader(csv_file, delimiter=',')
+            line_count = 0
+            for row in csv_reader:
+                if (line_count > 0):
+                    dt = dateutil.parser.parse(row[0]);   
+                    t = dt.replace(tzinfo=pytz.utc).astimezone(tz); 
+                    phasea['time'].append(t);
+                    
+                    #convert these to doubles
+                    phasea['avg_power'].append(float(row[1]));
+                    phasea['min_power'].append(float(row[2]));
+                    phasea['max_power'].append(float(row[3]));
+                    phasea['avg_volt'].append(float(row[4]));
+                    phasea['avg_thd'].append(float(row[5]));
+                    phasea['min_volt'].append(float(row[6]));
+                    phasea['max_volt'].append(float(row[7]));                     
+                    phasea['min_thd'].append(float(row[8]));
+                    phasea['max_thd'].append(float(row[9]));
+                    
+                line_count += 1;"""    
+            
+        
         for key, value in phasea.items(): 
             phasea[key] = [i if i is not None else 0.0 for i in value];  #replace nones with 0. 
             phasea[key] = np.asarray(phasea[key]);
@@ -933,8 +958,7 @@ def GetReportData(day):
         endb = time.time()
         elapsed_timeb = endb - startb
         
-        
-        
+        #Good one
         for r in cursor.fetchall(): 
             t = r['bucket'].replace(tzinfo=pytz.utc).astimezone(tz); 
             phaseb['time'].append(t);
@@ -946,8 +970,65 @@ def GetReportData(day):
             phaseb['max_volt'].append(r['max_volt']); 
             phaseb['avg_thd'].append(r['avg_thd']);
             phaseb['min_thd'].append(r['min_thd']);
-            phaseb['max_thd'].append(r['max_thd']); 
-            len_b += 1; 
+            phaseb['max_thd'].append(r['max_thd']);
+            len_b += 1;
+            
+        #using numpy.random.rand
+        """first_date = datetime(2022, 7, 28, 1, 1, 1, 0, pytz.utc);
+        phaseb['time'] = first_date + np.arange(1400) * timedelta(seconds=60);
+        nparray = np.random.rand(9, 1400);
+        phaseb['avg_power'] = nparray[0];
+        phaseb['min_power'] = nparray[1];
+        phaseb['max_power'] = nparray[2];
+        phaseb['avg_volt'] = nparray[3];
+        phaseb['min_volt'] = nparray[4];
+        phaseb['max_volt'] = nparray[5];
+        phaseb['avg_thd'] = nparray[6];
+        phaseb['min_thd'] = nparray[7];
+        phaseb['max_thd'] = nparray[8];"""
+            
+        
+        """#Generating 2000 points of fake data for testing purposes
+        i = 1400
+        thedate = datetime(2022, 7, 28, 1, 1, 1, 0, pytz.utc)
+        while (i > 0):
+            #deal with time first
+            phaseb['time'].append(thedate);
+            thedate += timedelta(seconds = 1);
+            
+            phaseb['avg_power'].append(random.randint(1, 1000));
+            phaseb['min_power'].append(random.randint(1, 1000));
+            phaseb['max_power'].append(random.randint(1, 1000));
+            phaseb['max_volt'].append(random.randint(115, 125));
+            phaseb['min_volt'].append(random.randint(115, 125));
+            phaseb['avg_volt'].append(random.randint(115, 125));
+            phaseb['max_thd'].append(random.uniform(0.001, 0.01));
+            phaseb['min_thd'].append(random.uniform(0.001, 0.01));
+            phaseb['avg_thd'].append(random.uniform(0.001, 0.01));
+            len_a += 1;
+            i -= 1;"""
+
+        """with open('local_psql_data.csv') as csv_file:
+            csv_reader = csv.reader(csv_file, delimiter=',')
+            line_count = 0
+            for row in csv_reader:
+                if (line_count > 0):
+                    dt = dateutil.parser.parse(row[0]);   
+                    t = dt.replace(tzinfo=pytz.utc).astimezone(tz); 
+                    phaseb['time'].append(t);
+                    
+                    #convert these to doubles
+                    phaseb['avg_power'].append(float(row[1]));
+                    phaseb['min_power'].append(float(row[2]));
+                    phaseb['max_power'].append(float(row[3]));
+                    phaseb['avg_volt'].append(float(row[4]));
+                    phaseb['avg_thd'].append(float(row[5]));
+                    phaseb['min_volt'].append(float(row[6]));
+                    phaseb['max_volt'].append(float(row[7]));                     
+                    phaseb['min_thd'].append(float(row[8]));
+                    phaseb['max_thd'].append(float(row[9]));
+                    
+                line_count += 1;"""
          
         for key, value in phaseb.items(): 
             phaseb[key] = [i if i is not None else 0.0 for i in value];  #replace nones with 0. 
@@ -965,6 +1046,7 @@ def GetReportData(day):
         endc = time.time()
         elapsed_timec = endc - startc
         
+        #Good one
         for r in cursor.fetchall(): 
             t = r['bucket'].replace(tzinfo=pytz.utc).astimezone(tz); 
             phasec['time'].append(t);
@@ -976,8 +1058,66 @@ def GetReportData(day):
             phasec['max_volt'].append(r['max_volt']); 
             phasec['avg_thd'].append(r['avg_thd']);
             phasec['min_thd'].append(r['min_thd']);
-            phasec['max_thd'].append(r['max_thd']); 
+            phasec['max_thd'].append(r['max_thd']);
             len_c +=1;
+            
+            
+        #using numpy.random.rand
+        """first_date = datetime(2022, 7, 28, 1, 1, 1, 0, pytz.utc);
+        phasec['time'] = first_date + np.arange(1400) * timedelta(seconds=60);
+        nparray = np.random.rand(9, 1400);
+        phasec['avg_power'] = nparray[0];
+        phasec['min_power'] = nparray[1];
+        phasec['max_power'] = nparray[2];
+        phasec['avg_volt'] = nparray[3];
+        phasec['min_volt'] = nparray[4];
+        phasec['max_volt'] = nparray[5];
+        phasec['avg_thd'] = nparray[6];
+        phasec['min_thd'] = nparray[7];
+        phasec['max_thd'] = nparray[8];"""
+        
+        
+        """#Generating 2000 points of fake data for testing purposes
+        i = 1400
+        thedate = datetime(2022, 7, 28, 1, 1, 1, 0, pytz.utc)
+        while (i > 0):
+            #deal with time first
+            phasec['time'].append(thedate);
+            thedate += timedelta(seconds = 1);
+            
+            phasec['avg_power'].append(random.randint(1, 1000));
+            phasec['min_power'].append(random.randint(1, 1000));
+            phasec['max_power'].append(random.randint(1, 1000));
+            phasec['max_volt'].append(random.randint(115, 125));
+            phasec['min_volt'].append(random.randint(115, 125));
+            phasec['avg_volt'].append(random.randint(115, 125));
+            phasec['max_thd'].append(random.uniform(0.001, 0.01));
+            phasec['min_thd'].append(random.uniform(0.001, 0.01));
+            phasec['avg_thd'].append(random.uniform(0.001, 0.01));
+            len_a += 1;
+            i -= 1;"""
+        
+        """with open('local_psql_data.csv') as csv_file:
+            csv_reader = csv.reader(csv_file, delimiter=',')
+            line_count = 0
+            for row in csv_reader:
+                if (line_count > 0):
+                    dt = dateutil.parser.parse(row[0]);   
+                    t = dt.replace(tzinfo=pytz.utc).astimezone(tz); 
+                    phasec['time'].append(t);
+                    
+                    #convert these to doubles
+                    phasec['avg_power'].append(float(row[1]));
+                    phasec['min_power'].append(float(row[2]));
+                    phasec['max_power'].append(float(row[3]));
+                    phasec['avg_volt'].append(float(row[4]));
+                    phasec['avg_thd'].append(float(row[5]));
+                    phasec['min_volt'].append(float(row[6]));
+                    phasec['max_volt'].append(float(row[7]));                     
+                    phasec['min_thd'].append(float(row[8]));
+                    phasec['max_thd'].append(float(row[9]));
+                    
+                line_count += 1;"""
         
         #end query time
         endq = time.time()
@@ -1208,6 +1348,8 @@ def GetReportData(day):
         startp = time.time()
         
         if variableinfo["total"] == "true":
+            #Need to add up max, min, and avg power for all 3 phases
+            #Starts with max power
             if buttons["Max"] == "true":
                 #code to fix operands error
                 while phasea['max_power'].size < phaseb['max_power'].size:
@@ -1216,7 +1358,8 @@ def GetReportData(day):
                     phasec['max_power'] = np.delete(phasec['max_power'], -1);
                 while phaseb['max_power'].size < phasec['max_power'].size:
                     phasec['max_power'] = np.delete(phasec['max_power'], -1);
-            
+                
+                #Calculate cumulative max power
                 maxpower = phasea['max_power'] + phaseb['max_power'] + phasec['max_power'];
             else:
                 maxpower = np.zeros(2);
@@ -1229,7 +1372,8 @@ def GetReportData(day):
                     phasec['min_power'] = np.delete(phasec['min_power'], -1);
                 while phaseb['min_power'].size < phasec['min_power'].size:
                     phasec['min_power'] = np.delete(phasec['min_power'], -1);
-            
+                
+                #Calculate cumulative min power
                 minpower = phasea['min_power'] + phaseb['min_power'] + phasec['min_power'];
             else:
                 minpower = np.zeros(2);
@@ -1242,18 +1386,20 @@ def GetReportData(day):
                     phasec['avg_power'] = np.delete(phasec['avg_power'], -1);
                 while phaseb['avg_power'].size < phasec['avg_power'].size:
                     phasec['avg_power'] = np.delete(phasec['avg_power'], -1);
-            
+                
+                #Calculate cumulative avg power
                 avgpower = phasea['avg_power'] + phaseb['avg_power'] + phasec['avg_power'];
             else:
                 avgpower = np.zeros(2);
             
+            #Plot max, min, and avg power (or whichever ones are requested)
             (bk_script, bk_div) = components(
                     graphs.plot_daily(
                         phasea['time'], "Total", maxpower, minpower, avgpower
                     )
                 )
         elif variableinfo["variable_plot"] == 'Power':
-            
+            #Plot whichever power is requested
             if variableinfo["variable_statistic"] == 'Max':
                 a = phasea['max_power'];
                 b = phaseb['max_power'];
@@ -1280,7 +1426,7 @@ def GetReportData(day):
                     )
                 )
         elif variableinfo["variable_plot"] == 'Voltage':
-            
+            #Plot whichever voltage is requested
             if variableinfo["variable_statistic"] == 'Max':
                 a = phasea['max_volt'];
                 b = phaseb['max_volt'];
@@ -1307,7 +1453,7 @@ def GetReportData(day):
                     )
                 )
         elif variableinfo["variable_plot"] == 'Voltage THD':
-            
+            #Plot whichever THD is requested
             if variableinfo["variable_statistic"] == 'Max':
                 a = phasea['max_thd'];
                 b = phaseb['max_thd'];
@@ -1344,6 +1490,7 @@ def GetReportData(day):
         now = datetime.now()
         current_time = now.strftime("%H:%M:%S")
         
+        #Just some log file statements that can be seen in the log file called plots.log
         if variableinfo["Total"] == "false":
             logger.info("%s: Plotting %s %s at %s resolution", str(current_time), variableinfo["variable_statistic"], variableinfo["variable_plot"], variableinfo["interval"]);
         else:
@@ -1355,5 +1502,6 @@ def GetReportData(day):
         logger.info("Query Phase C: %s seconds", str(round(elapsed_timec, 3)))
         logger.info("Calculation Time: %s seconds", str(round(elapsed_timecal, 3)))
         logger.info("Bokeh Plotting Time: %s seconds", str(round(elapsed_timep, 3)))
+        logger.info("Shashank's API Query Time: %s seconds", str(round(elapsed_timess, 3)))
         
         return (split_phase,month_avg, phasea_avg, phaseb_avg, phasec_avg, a_percent, b_percent, c_percent, min_power, max_power, total_power, power_msg, min_voltage, max_voltage, min_thd, max_thd, avg_thd, avg_volt, bk_script, bk_div); 
