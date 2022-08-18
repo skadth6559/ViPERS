@@ -9,6 +9,11 @@
 {% endblock %}
 {% block subcontent %} 
 <div class="container">
+	<script>
+	$(document).ready(function(){
+		$('[data-toggle="tooltip"]').tooltip();
+	});
+	</script>
 	<div class="card m-2">
         <h3 class="card-header"> Select a date to view a Daily Summary </h3>
         <div class="card-body">
@@ -154,18 +159,62 @@
 			</div>
 			<br>
 			<form class = 'form form horizontal' method = 'post'>
-				<p class="font-weight-bold">Select between phase-based or total power visualizations:&nbsp;&nbsp;{{phasepow_btn}} {{totalpow_btn}}</p>
-				<p class="font-weight-bold">{{description}} &nbsp;&nbsp; (To change graph, choose options below) </p>
-				Variable: &nbsp; {{power_btn}}
+				<p class="font-weight-bold" style="font-size:18px">{{description}} &nbsp; (To change graph, choose options below) </p>
+				<p class="font-weight-bold">Phase-based:&nbsp;&nbsp;{{phasepow_btn}} {{totalpow_btn}}</p>
+				<p class="font-weight-bold">Variable: &nbsp; {{power_btn}}
 				{{voltage_btn}}
 				{{thd_btn}} &nbsp;&nbsp;&nbsp;&nbsp;
 				Statistic: &nbsp; {{max_btn}}
 				{{min_btn}}
-				{{avg_btn}}
-				<br>
-				<br>
-				<p class="font-weight-bold">Select time interval:&nbsp;&nbsp; {{size1_btn}} {{size2_btn}} {{size3_btn}} {{size4_btn}}</p>
-				<p class="font-weight-bold">Select resolution:&nbsp;&nbsp; {{interval1_btn}} {{interval2_btn}} {{interval3_btn}} {{interval4_btn}}</p>
+				{{avg_btn}}</p>
+				<p class="font-weight-bold">Time Interval:&nbsp;&nbsp; {{size1_btn}} {{size2_btn}} {{size3_btn}} {{size4_btn}}</p>
+				<p class="font-weight-bold">Resolution:&nbsp;&nbsp; {{interval4_btn}} {{interval3_btn}} {{interval2_btn}} {{interval1_btn}}</p>
+				<p class="font-weight-bold">Use PostgreSQL API?:&nbsp;&nbsp; {{psqlno}} {{psqlyes}} </p>
+				
+				<!--Button trigger modal-->
+				<p style="text-align:right;">{{savedefault_btn}} {{reset_btn}}</p>
+				<!--Save Modal-->
+				<div class="modal fade" id="saveModal" tabindex="-1" role="dialog" aria-labelledby="saveModalLabel" aria-hidden="true">
+					<div class="modal-dialog" role="document">
+						<div class="modal-content">
+							<div class="modal-header">
+								<h5 class="modal-title" id="saveModalLabel">Confirm</h5>
+								<button type = "button" class="close" data-dismiss="modal" aria-label="Close">
+									<span aria-hidden="true">&times;</span>
+								</button>
+							</div>
+							<div class="modal_body">
+								&nbsp;&nbsp;&nbsp;&nbsp;Do you wish to save current settings as the default?
+							</div>
+							<div class="modal-footer">
+								<button type="button" class="btn btn-secondary" data-dismiss="modal">No</button>
+								<!--<button type="button" class="btn btn-primary">Save changes</button>-->
+								{{confirmsave_btn}}
+							</div>
+						</div>
+					</div>
+				</div>
+				<!--Reset Modal-->
+				<div class="modal fade" id="exampleModal" tabindex="-1" role="dialog" aria-labelledby="exampleModalLabel" aria-hidden="true">
+					<div class="modal-dialog" role="document">
+						<div class="modal-content">
+							<div class="modal-header">
+								<h5 class="modal-title" id="exampleModalLabel">Confirm</h5>
+								<button type = "button" class="close" data-dismiss="modal" aria-label="Close">
+									<span aria-hidden="true">&times;</span>
+								</button>
+							</div>
+							<div class="modal_body">
+								&nbsp;&nbsp;&nbsp;&nbsp;Do you wish to reset to the default settings?
+							</div>
+							<div class="modal-footer">
+								<button type="button" class="btn btn-secondary" data-dismiss="modal">No</button>
+								<!--<button type="button" class="btn btn-primary">Save changes</button>-->
+								{{confirm_btn}}
+							</div>
+						</div>
+					</div>
+				</div>
 			</form>
 		</div>
 	</div> 
