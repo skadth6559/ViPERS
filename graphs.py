@@ -40,6 +40,7 @@ from bokeh.models import (
 from bokeh.layouts import column, row, layout
 from bokeh.plotting import figure
 from bokeh.transform import dodge
+from bokeh.models import DatetimeTickFormatter
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
@@ -579,6 +580,7 @@ def plot_daily(time, variable, phasea, phaseb, phasec=None, size = (400,275)):
         plot_height = size[1],
         tools =["tap", "xwheel_zoom", "xpan", "box_zoom", "box_select", "reset"],
         sizing_mode= "scale_width",
+        output_backend = "webgl",
     )
     
     plot.title.text_font_size = '20pt';
@@ -592,6 +594,7 @@ def plot_daily(time, variable, phasea, phaseb, phasec=None, size = (400,275)):
         if variable == "Power":
             plot.title.text = 'Power Daily Summary';
             plot.yaxis.axis_label = "Power (V-A)";
+            
         elif variable == "Voltage":
             plot.title.text = 'Voltage Daily Summary';
             plot.yaxis.axis_label = "Voltage (V)"; 
@@ -600,9 +603,12 @@ def plot_daily(time, variable, phasea, phaseb, phasec=None, size = (400,275)):
             plot.yaxis.axis_label = "Voltage THD (%)";
             
         if phasec is not None and variable == "Power": 
-            plot.multi_line([time,time,time], [phasea, phaseb, phasec], line_color=["black", "red", "blue"], line_width= 2);
+            plot.line(time, phasea, line_color = "black", legend_label = "Phase A", line_width = 2);
+            plot.line(time, phaseb, line_color = "red", legend_label = "Phase B", line_width = 2);
+            plot.line(time, phasec, line_color = "blue", legend_label = "Phase C", line_width = 2);
         elif variable == "Power": 
-            plot.multi_line([time,time], [phasea, phaseb], line_color=["black", "red"], line_width= 2);
+            plot.line(time, phasea, line_color = "black", legend_label = "Phase A", line_width = 2);
+            plot.line(time, phaseb, line_color = "red", legend_label = "Phase B", line_width = 2);
         else:
             plot.line(time, phasea, line_color = "black", line_width = 2);
     else:
@@ -615,8 +621,39 @@ def plot_daily(time, variable, phasea, phaseb, phasec=None, size = (400,275)):
             plot.line(time, phaseb, line_color = "gray", legend_label = "Min", line_width = 2);
         if not np.array_equal(phasec, np.zeros(2)):    
             plot.line(time, phasec, line_color = "black", legend_label = "Avg", line_width = 2);
-        plot.legend.location = "top_left";
         
+    plot.legend.location = "top_left";    
+    
+    return plot;
+
+def plot_shashank(time, variable, data, size = (400,275)): 
+    plot = figure(
+        y_axis_type = 'linear',
+        x_axis_type = "datetime",
+        plot_width = size[0],
+        plot_height = size[1],
+        tools =["tap", "xwheel_zoom", "xpan", "box_zoom", "box_select", "reset"],
+        sizing_mode= "scale_width",
+        output_backend = "webgl",
+    )
+    
+    plot.title.text_font_size = '20pt';
+    plot.xaxis.axis_label_text_font_size = '14pt';
+    plot.yaxis.axis_label_text_font_size = '14pt';
+    plot.xaxis.major_label_text_font_size = '12pt';
+    plot.yaxis.major_label_text_font_size = '12pt';
+    plot.xaxis.axis_label = "Time (UTC)";
+    
+    plot.title.text = 'API Plot';
+    
+    if variable == "thd_voltage":
+        plot.yaxis.axis_label = "THD Voltage (%)";
+    elif variable == "thd_current":
+        plot.yaxis.axis_label = "THD Current(%)";
+    elif variable == "frequency":
+        plot.yaxis.axis_label = "Frequency (Hz)";
+    
+    plot.line(time, data, line_color = "black", line_width = 2);
     
     return plot;
 
